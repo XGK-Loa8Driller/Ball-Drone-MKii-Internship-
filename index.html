@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d1210" />
+    <title>Ball Drone MKII Controller</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+
+    <!-- Leaflet CSS — works offline after first load -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <main class="app-shell" aria-label="Ball Drone MKII controller">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>
+            <strong>Ball Drone MKII</strong>
+            <small>F722 USB/Serial</small>
+          </span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span class="status-pill" id="connectionPill">SIM</span>
+          <span class="status-pill" id="flightTimer">00:00</span>
+        </div>
+      </header>
+
+      <section class="command-strip" aria-label="Connection and arming">
+        <button class="primary-action" id="connectButton" type="button">Connect</button>
+        <button class="danger-action" id="armButton" type="button">Arm</button>
+        <button class="ghost-action" id="levelButton" type="button">Level</button>
+        <div class="mode-switch" role="group" aria-label="Flight mode">
+          <button class="mode-button is-active" type="button" data-mode="ANGLE">Angle</button>
+          <button class="mode-button" type="button" data-mode="ACRO">Acro</button>
+        </div>
+      </section>
+
+      <section class="telemetry-strip" aria-label="Telemetry summary">
+        <div>
+          <span>Pack</span>
+          <strong id="voltageValue">12.4 V</strong>
+        </div>
+        <div>
+          <span>Alt</span>
+          <strong id="altitudeValue">0.0 m</strong>
+        </div>
+        <div>
+          <span>Roll</span>
+          <strong id="rollValue">0 deg</strong>
+        </div>
+        <div>
+          <span>Pitch</span>
+          <strong id="pitchValue">0 deg</strong>
+        </div>
+      </section>
+
+      <section class="dashboard" aria-label="Live flight panels">
+        <article class="panel panel-attitude">
+          <div class="panel-heading">
+            <span>Attitude</span>
+            <b id="modeLabel">ANGLE</b>
+          </div>
+          <canvas id="pfdCanvas" aria-label="Artificial horizon"></canvas>
+        </article>
+
+        <article class="panel panel-model">
+          <div class="panel-heading">
+            <span>Model</span>
+            <b id="thrustLabel">0%</b>
+          </div>
+          <div class="model-mount" id="modelMount" aria-label="3D ball drone model"></div>
+        </article>
+
+        <article class="panel panel-outputs">
+          <div class="panel-heading">
+            <span>Thrust + Vanes</span>
+            <b id="armedLabel">SAFE</b>
+          </div>
+          <div class="output-list" id="outputList">
+            <div class="bar-row" data-output="motor">
+              <span>Main prop</span>
+              <div class="bar-track"><i></i></div>
+              <b>0%</b>
+            </div>
+            <div class="bar-row" data-output="front">
+              <span>Front vane</span>
+              <div class="bar-track"><i></i></div>
+              <b>1500</b>
+            </div>
+            <div class="bar-row" data-output="right">
+              <span>Right vane</span>
+              <div class="bar-track"><i></i></div>
+              <b>1500</b>
+            </div>
+            <div class="bar-row" data-output="rear">
+              <span>Rear vane</span>
+              <div class="bar-track"><i></i></div>
+              <b>1500</b>
+            </div>
+            <div class="bar-row" data-output="left">
+              <span>Left vane</span>
+              <div class="bar-track"><i></i></div>
+              <b>1500</b>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel panel-rc">
+          <div class="panel-heading">
+            <span>RC Input</span>
+            <b id="packetLabel">20 Hz</b>
+          </div>
+          <div class="rc-bars">
+            <div class="rc-row" data-channel="thr"><span>THR</span><i></i><b>1000</b></div>
+            <div class="rc-row" data-channel="yaw"><span>YAW</span><i></i><b>1500</b></div>
+            <div class="rc-row" data-channel="pit"><span>PIT</span><i></i><b>1500</b></div>
+            <div class="rc-row" data-channel="rol"><span>ROL</span><i></i><b>1500</b></div>
+          </div>
+        </article>
+
+        <article class="panel panel-pid">
+          <div class="panel-heading">
+            <span>PID Tune</span>
+            <b id="pidProfile">Soft hover</b>
+          </div>
+          <label class="slider-row">
+            <span>P</span>
+            <input id="pidP" type="range" min="0" max="180" value="105" />
+            <b>105</b>
+          </label>
+          <label class="slider-row">
+            <span>I</span>
+            <input id="pidI" type="range" min="0" max="120" value="28" />
+            <b>28</b>
+          </label>
+          <label class="slider-row">
+            <span>D</span>
+            <input id="pidD" type="range" min="0" max="140" value="62" />
+            <b>62</b>
+          </label>
+        </article>
+
+        <!-- ── Location panel — map wrapped for legend overlay ─────────── -->
+        <article class="panel panel-location">
+          <div class="panel-heading">
+            <span>Location</span>
+            <b id="gpsStatus">SAVED</b>
+          </div>
+
+          <!-- Map container — position:relative so legend sits inside it -->
+          <div class="map-wrap">
+            <div id="map"></div>
+
+            <!-- Map legend overlay -->
+            <div class="map-legend" id="map-legend">
+              <div class="legend-item">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <polygon points="12,2 22,22 12,17 2,22" fill="#00e5ff"/>
+                </svg>
+                <span>Drone</span>
+              </div>
+              <div class="legend-item">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" fill="#ffab00"/>
+                </svg>
+                <span>Pilot</span>
+              </div>
+              <div class="legend-item">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <polygon points="12,2 20,10 17,10 17,22 7,22 7,10 4,10" fill="#00c853"/>
+                </svg>
+                <span>Home</span>
+              </div>
+              <div class="legend-item">
+                <div style="width:14px;height:2px;background:#00e5ff;border-radius:1px"></div>
+                <span>Path</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="location-readout">
+            <div>
+              <span>Lat</span>
+              <b id="latValue">Tap GPS</b>
+            </div>
+            <div>
+              <span>Lon</span>
+              <b id="lonValue">Saved map</b>
+            </div>
+            <div>
+              <span>Acc</span>
+              <b id="accuracyValue">--</b>
+            </div>
+          </div>
+          <div class="location-actions">
+            <button class="ghost-action" id="locateButton" type="button">GPS</button>
+            <a class="map-link" id="mapLink" href="#" target="_blank" rel="noreferrer">Map</a>
+          </div>
+        </article>
+
+        <!-- ── GPS Status panel — new, sits after Location ─────────────── -->
+        <article class="panel panel-gps" id="panel-gps">
+
+          <div class="panel__header">
+            <span class="panel__title">GPS STATUS</span>
+            <span class="gps-fix-badge" id="gps-fix">NO FIX</span>
+          </div>
+
+          <div class="gps-grid">
+
+            <!-- Coordinates -->
+            <div class="gps-row">
+              <span class="gps-label">Latitude</span>
+              <span class="gps-value" id="gps-lat">--</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label">Longitude</span>
+              <span class="gps-value" id="gps-lon">--</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label">Altitude</span>
+              <span class="gps-value" id="gps-alt">--</span>
+            </div>
+
+            <div class="gps-divider"></div>
+
+            <!-- Signal quality -->
+            <div class="gps-row">
+              <span class="gps-label">Satellites</span>
+              <span class="gps-value" id="gps-sats">--</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label">HDOP</span>
+              <span class="gps-value" id="gps-hdop">--</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label">Update Age</span>
+              <span class="gps-value" id="gps-age">--</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label">Module</span>
+              <span class="gps-value" id="gps-module">NEO-6M</span>
+            </div>
+
+            <div class="gps-divider"></div>
+
+            <!-- Motion -->
+            <div class="gps-row">
+              <span class="gps-label">Speed</span>
+              <span class="gps-value" id="gps-speed">--</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label">Heading</span>
+              <span class="gps-value" id="gps-heading">--</span>
+            </div>
+
+            <div class="gps-divider"></div>
+
+            <!-- Navigation -->
+            <div class="gps-row">
+              <span class="gps-label">→ Pilot Dist</span>
+              <span class="gps-value" id="gps-dist-pilot">--</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label">→ Pilot Bearing</span>
+              <span class="gps-value" id="gps-bear-pilot">--</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label">⌂ Home Dist</span>
+              <span class="gps-value" id="gps-dist-home">Not set</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label">⌂ Home Bearing</span>
+              <span class="gps-value" id="gps-bear-home">--</span>
+            </div>
+
+          </div>
+
+          <!-- TRACK + SET HOME buttons -->
+          <div class="gps-controls">
+            <button class="btn btn--map" id="btn-track" type="button">TRACK OFF</button>
+            <button class="btn btn--map" id="btn-set-home" type="button">SET HOME</button>
+          </div>
+
+        </article>
+        <!-- ── end GPS Status panel ──────────────────────────────────────── -->
+
+      </section>
+
+      <section class="control-deck" aria-label="Touch RC controls">
+        <div class="stick-card">
+          <div class="stick-title">
+            <span>Throttle</span>
+            <b id="throttleReadout">0%</b>
+          </div>
+          <div class="joystick throttle-stick" data-stick="left" aria-label="Throttle and yaw joystick">
+            <span class="stick-ring"></span>
+            <span class="stick-axis stick-axis-x"></span>
+            <span class="stick-axis stick-axis-y"></span>
+            <span class="stick-thumb" id="leftThumb"></span>
+          </div>
+          <div class="stick-meta">
+            <span>Yaw</span>
+            <b id="yawReadout">0%</b>
+          </div>
+        </div>
+
+        <div class="center-stack">
+          <button id="killButton" class="kill-switch" type="button">Kill</button>
+          <button id="trimButton" class="trim-button" type="button">Trim</button>
+          <span class="link-state" id="linkState">Bench sim</span>
+        </div>
+
+        <div class="stick-card">
+          <div class="stick-title">
+            <span>Pitch</span>
+            <b id="pitchReadout">0%</b>
+          </div>
+          <div class="joystick" data-stick="right" aria-label="Pitch and roll joystick">
+            <span class="stick-ring"></span>
+            <span class="stick-axis stick-axis-x"></span>
+            <span class="stick-axis stick-axis-y"></span>
+            <span class="stick-thumb" id="rightThumb"></span>
+          </div>
+          <div class="stick-meta">
+            <span>Roll</span>
+            <b id="rollReadout">0%</b>
+          </div>
+        </div>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- GPS tracking module (NEO-6M / 5 Hz) -->
+    <script src="./gps_module.js"></script>
+
+    <!-- Service worker: caches map tiles for offline / ESP32-only WiFi -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw-tiles.js')
+          .catch(err => console.warn('[SW] Registration failed:', err));
+      }
+    </script>
+
+  </body>
+</html>

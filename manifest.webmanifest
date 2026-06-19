@@ -1,0 +1,10 @@
+{
+  "name": "Ball Drone MKII Controller",
+  "short_name": "Ball MKII",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1210",
+  "theme_color": "#0d1210",
+  "orientation": "portrait",
+  "icons": []
+}
