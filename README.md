@@ -1,0 +1,190 @@
+﻿# Ball Drone MKII – Internship Project
+
+## Overview
+
+The **Ball Drone MKII** is a thrust-vectoring spherical drone inspired by the original Ball Drone concept. This project is being developed as part of an Embedded Systems Internship and focuses on integrating mobile control, flight control, GPS tracking, wireless communication, and autonomous navigation capabilities into a compact spherical UAV platform.
+
+The drone uses a single brushless motor with four servo-actuated control vanes to achieve stabilization and directional control through thrust vectoring.
+
+---
+
+## Project Objectives
+
+* Develop a mobile-based ground control station.
+* Implement wireless communication between the drone and mobile application.
+* Integrate GPS-based tracking and telemetry.
+* Interface an ESP32 with a flight controller.
+* Visualize drone telemetry in real time.
+* Explore autonomous navigation and return-to-home functionality.
+* Build a complete prototype suitable for research and educational purposes.
+
+---
+
+## Hardware Components
+
+### Flight System
+
+* Radiolink F722 Flight Controller
+* RS2205 2300KV Brushless Motor
+* Cyclone 35A BLHeli-S ESC
+* 4 × Servo Motors (Thrust Vectoring Vanes)
+* 3S 11.1V LiPo Battery
+
+### Processing & Communication
+
+* ESP32 Dev Module
+* Wi-Fi Communication Interface
+
+### Navigation
+
+* NEO-M8N GPS Module
+
+### Airframe
+
+* Custom 3D Printed Ball Drone MKII Frame
+* 3D Printed Propeller and Structural Components
+
+---
+
+## Software Stack
+
+### Embedded
+
+* Arduino Framework
+* ESP32 Wi-Fi Server
+* TinyGPSPlus
+* UART Communication
+
+### Flight Control
+
+* Betaflight
+* Radiolink F722
+
+### Ground Control Application
+
+* HTML
+* CSS
+* JavaScript
+* Capacitor Android
+* Leaflet Maps
+
+---
+
+## Features
+
+### Mobile Ground Control Station
+
+* Dual virtual joysticks
+* Arm / Disarm controls
+* Flight mode selection
+* PID tuning interface
+* Real-time telemetry display
+
+### Telemetry
+
+* Battery voltage
+* Roll
+* Pitch
+* Yaw
+* Altitude
+* GPS coordinates
+
+### GPS Tracking
+
+* Live drone position
+* Pilot position
+* Distance calculations
+* Bearing calculations
+* Home position storage
+* Return-to-home support
+
+### Connectivity
+
+* ESP32 Wi-Fi Access Point
+* Real-time control commands
+* Telemetry transmission
+
+---
+
+## System Architecture
+
+```text
+Mobile App
+    │
+    ▼
+ ESP32 Wi-Fi
+    │
+    ▼
+ Flight Controller (F722)
+    │
+    ├── ESC
+    │      └── Brushless Motor
+    │
+    ├── Servo 1
+    ├── Servo 2
+    ├── Servo 3
+    └── Servo 4
+
+ GPS (NEO-M8N)
+    │
+    ▼
+ ESP32
+```
+
+---
+
+## Current Progress
+
+### Completed
+
+* Mobile application UI
+* Virtual joystick controls
+* ESP32 communication
+* Real-time command transmission
+* Leaflet map integration
+* Phone GPS integration
+* Drone telemetry framework
+* GPS status panel
+
+### In Progress
+
+* NEO-M8N integration
+* Real-time drone tracking
+* Home point functionality
+* Distance and bearing calculations
+* Flight controller integration
+
+### Future Enhancements
+
+* Autonomous waypoint navigation
+* Return-to-home automation
+* Obstacle detection
+* FPV integration
+* Mission planning
+
+---
+
+## Project Goals
+
+This project aims to demonstrate the integration of:
+
+* Embedded Systems
+* Flight Control Systems
+* Mobile Application Development
+* GPS Navigation
+* Wireless Communication
+* Real-Time Telemetry
+
+into a single functional aerial robotics platform.
+
+---
+
+## Author
+
+**Aditya K**
+
+Electronics and Communication Engineering
+
+Embedded Systems Internship Project
+
+2026
